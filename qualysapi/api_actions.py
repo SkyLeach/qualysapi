@@ -2,13 +2,39 @@ from __future__ import absolute_import
 from lxml import objectify
 import qualysapi.api_objects
 from qualysapi.api_objects import *
+from qualysapi.exceptions import *
+from qualysapi.api_methods import api_methods
+import logging
+import pprint
+import json
+
+from multiprocessing import pool
+
+from threading import Thread, Event
+
+
+# two essential methods here include creating a semaphore-based local threading
+# or multiprocessing pool which is capable of monitoring and dispatching
+# callbacks to calling instances when both parsing and consumption complete.
+
+# In the default implementation the calls are blocking and perform a single
+# request, parse the response, and then wait for parse consumption to finish.
+# This isn't ideal, however, as there are often cases where multiple requests
+# could be sent off at the same time and handled asynchronously.  The
+# methods below wrap thread pools or process pools for asynchronous
+# multi-request parsing/consuming by a single calling program.
+
+
+def defaultCompletionHandler(IB):
+    logging.info('Import buffer completed.')
+    logging.info(repr(IB))
 
 
 class QGActions(object):
     def getHost(host):
         call = '/api/2.0/fo/asset/host/'
         parameters = {'action': 'list', 'ips': host, 'details': 'All'}
-        hostData = objectify.fromstring(self.request(call, parameters)).RESPONSE
+        hostData = objectify.fromstring(self.request(call, data=parameters)).RESPONSE
         try:
             hostData = hostData.HOST_LIST.HOST
             return Host(hostData.DNS, hostData.ID, hostData.IP, hostData.LAST_VULN_SCAN_DATETIME, hostData.NETBIOS, hostData.OS, hostData.TRACKING_METHOD)
@@ -24,7 +50,6 @@ class QGActions(object):
             hostArray.append(Host(host.DNS, host.ID, host.IP, host.LAST_VULN_SCAN_DATETIME, host.NETBIOS, host.OS, host.TRACKING_METHOD))
 
         return hostArray
-
     def listAssetGroups(self, groupName=''):
         call = 'asset_group_list.php'
         if groupName == '':
@@ -60,6 +85,7 @@ class QGActions(object):
         return groupsArray
 
     def listReportTemplates(self):
+        '''Load a list of report templates'''
         call = 'report_template_list.php'
         rtData = objectify.fromstring(self.request(call))
         templatesArray = []
@@ -85,13 +111,13 @@ class QGActions(object):
 
         else:
             parameters = {'action': 'list', 'id': id}
-            repData = objectify.fromstring(self.request(call, parameters)).RESPONSE.REPORT_LIST.REPORT
+            repData = objectify.fromstring(self.request(call, data=parameters)).RESPONSE.REPORT_LIST.REPORT
             return Report(repData.EXPIRATION_DATETIME, repData.ID, repData.LAUNCH_DATETIME, repData.OUTPUT_FORMAT, repData.SIZE, repData.STATUS, repData.TYPE, repData.USER_LOGIN)
 
     def notScannedSince(self, days):
         call = '/api/2.0/fo/asset/host/'
         parameters = {'action': 'list', 'details': 'All'}
-        hostData = objectify.fromstring(self.request(call, parameters))
+        hostData = objectify.fromstring(self.request(call, data=parameters))
         hostArray = []
         today = datetime.date.today()
         for host in hostData.RESPONSE.HOST_LIST.HOST:
@@ -179,3 +205,12 @@ class QGActions(object):
             agList = []
 
         return Scan(agList, scan.DURATION, scan.LAUNCH_DATETIME, scan.OPTION_PROFILE.TITLE, scan.PROCESSED, scan.REF, scan.STATUS, scan.TARGET, scan.TITLE, scan.TYPE, scan.USER_LOGIN)
+
+    def addBuffer(self, parse_buffer):
+        '''
+        Add an ImportBuffer to this action object.
+        '''
+        self.import_buffer = parse_buffer
+
+    def getConnectionConfig(self):
+        return self.conn.getConfig()

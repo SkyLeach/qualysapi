@@ -30,20 +30,31 @@ class QualysConnectConfig:
     from an ini file.
     """
 
-    def __init__(self, filename=qcs.default_filename, remember_me=False, remember_me_always=False):
+    def __init__(self, *args, **kwargs):
 
+        #handle kwarg defaults (don't think I can zip because of overwrite)
+        settings = qcs.defaults
+        settings.update(kwargs)
+        logging.debug(pprint.pformat(kwargs))
         self._cfgfile = None
 
-        # Prioritize local directory filename.
-        # Check for file existence.
-        if os.path.exists(filename):
-            self._cfgfile = filename
-        elif os.path.exists(os.path.join(os.path.expanduser("~"), filename)):
-            # Set home path for file.
-            self._cfgfile = os.path.join(os.path.expanduser("~"), filename)
+        #this needs to only be done in ***SOME*** cases.  UGH yuck no no no
+        if(settings['use_ini']):
+            # Prioritize local directory filename.
+            # Check for file existence.
+            if os.path.exists(settings['filename']):
+                self._cfgfile = settings['filename']
+            elif os.path.exists(os.path.join(os.path.expanduser("~"),
+                settings['filename'])):
+                # Set home path for file.
+                self._cfgfile = os.path.join(os.path.expanduser("~"),
+                        settings['filename'])
+        else:
+            self._cfgfile = None #better... but not happy...
 
         # create ConfigParser to combine defaults and input from config file.
         self._cfgparse = ConfigParser(qcs.defaults)
+        logging.debug(pprint.pformat(self._cfgparse.sections()))
 
         if self._cfgfile:
             self._cfgfile = os.path.realpath(self._cfgfile)
@@ -152,10 +163,21 @@ class QualysConnectConfig:
         else:
             self.proxies = None
 
+        #uh... ok..., let's go ahead and handle kwarg overrides
+        for key in settings:
+            if settings[key] is not None:
+                self._cfgparse.set('info', key, str(settings[key]))
+
         # ask username (if one doesn't exist)
+        logging.debug('checking config file for username')
         if not self._cfgparse.has_option('info', 'username'):
             username = input('QualysGuard Username: ')
             self._cfgparse.set('info', 'username', username)
+        else:
+            logging.debug('username \'' + \
+                    self._cfgparse.get('info', 'username') + \
+                    '\' found in config file')
+
 
         # ask password (if one doesn't exist)
         if not self._cfgparse.has_option('info', 'password'):
@@ -164,15 +186,10 @@ class QualysConnectConfig:
 
         logging.debug(self._cfgparse.items('info'))
 
-        if remember_me or remember_me_always:
+        if settings['remember_me'] or settings['remember_me_always']:
             # Let's create that config file for next time...
             # Where to store this?
-            if remember_me:
-                # Store in current working directory.
-                config_path = filename
-            if remember_me_always:
-                # Store in home directory.
-                config_path = os.path.expanduser("~")
+            config_path = os.path.expanduser('~') if settings['remember_me_always'] else settings['filename']
             if not os.path.exists(config_path):
                 # Write file only if it doesn't already exists.
                 # http://stackoverflow.com/questions/5624359/write-file-with-specific-permissions-in-python

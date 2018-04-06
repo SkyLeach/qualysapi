@@ -16,5 +16,13 @@ if os.name == 'nt':
 else:
     default_filename = ".qcrc"
 
-defaults = {'hostname': 'qualysapi.qualys.com',
-            'max_retries': '3'}
+defaults =  {
+    'hostname'           : 'qualysapi.qualys.com',
+    'max_retries'        : '3',
+    'filename'           : default_filename,
+    'cfg_file'           : default_filename,
+    'remember_me'        : False,
+    'remember_me_always' : False,
+    'use_ini'            : False,
+    'map_template'       : 'Unknown Device Report',
+}

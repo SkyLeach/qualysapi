@@ -45,3 +45,5 @@ config.ini
 # PyCharm
 .idea
 .qcrc.swp
+integration-config.cfg
+dump.rdb

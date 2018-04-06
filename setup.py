@@ -46,5 +46,7 @@ setup(name=__pkgname__,
       ],
       install_requires=[
           'requests',
+          'redis',
       ],
+      test_suite='nose2.collector.collector',
      )

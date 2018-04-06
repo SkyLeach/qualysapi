@@ -8,6 +8,7 @@ __license__ = 'Apache License 2.0'
 and requesting data from it.
 """
 import logging
+import pprint
 import time
 import urllib.parse
 from collections import defaultdict
@@ -15,10 +16,13 @@ from collections import defaultdict
 import requests
 
 import qualysapi.version
+from qualysapi.api_methods import api_methods
+from qualysapi.api_methods import api_methods_with_trailing_slash
 import qualysapi.api_methods
+from qualysapi import util
 
-import qualysapi.api_actions
-import qualysapi.api_actions as api_actions
+from qualysapi.exceptions import QualysAuthenticationException
+from qualysapi.api_methods import api_methods
 
 # Setup module level logging.
 logger = logging.getLogger(__name__)
@@ -27,10 +31,11 @@ try:
     from lxml import etree
 except ImportError as e:
     logger.warning(
-        'Warning: Cannot consume lxml.builder E objects without lxml. Send XML strings for AM & WAS API calls.')
+        'Warning: Cannot consume lxml.builder E objects without lxml. \
+                Send XML strings for AM & WAS API calls.')
 
 
-class QGConnector(api_actions.QGActions):
+class QGConnector:
     """ Qualys Connection class which allows requests to the QualysGuard API using HTTP-Basic Authentication (over SSL).
 
     """
@@ -39,18 +44,15 @@ class QGConnector(api_actions.QGActions):
         # Read username & password from file, if possible.
         self.auth = auth
         # Remember QualysGuard API server.
-        self.server = server
+        if 'server' in kwargs:
+            self.__server = kwargs['server']
         # Remember rate limits per call.
-        self.rate_limit_remaining = defaultdict(int)
-        # api_methods: Define method algorithm in a dict of set.
-        # Naming convention: api_methods[api_version optional_blah] due to api_methods_with_trailing_slash testing.
-        self.api_methods = qualysapi.api_methods.api_methods
-        #
-        # Keep track of methods with ending slashes to autocorrect user when they forgot slash.
-        self.api_methods_with_trailing_slash = qualysapi.api_methods.api_methods_with_trailing_slash
-        self.proxies = proxies
-        logger.debug('proxies = \n%s' % proxies)
+        if 'rate_limit_remaining' in kwargs:
+            self.__rate_limit_remaining = kwargs['rate_limit_remaining']
+        self.proxies = kwargs.get('proxies', None)
+        logger.debug('proxies = \n%s' % self.proxies)
         # Set up requests max_retries.
+        max_retries = kwargs.get('max_retries', 3)
         logger.debug('max_retries = \n%s' % max_retries)
         self.session = requests.Session()
         http_max_retries = requests.adapters.HTTPAdapter(max_retries=max_retries)
@@ -114,13 +116,13 @@ class QGConnector(api_actions.QGActions):
         # Set base url depending on API version.
         if api_version == 1:
             # QualysGuard API v1 url.
-            url = "https://%s/msp/" % (self.server,)
+            url = "https://%s/msp/" % (self.__server,)
         elif api_version == 2:
             # QualysGuard API v2 url.
-            url = "https://%s/" % (self.server,)
+            url = "https://%s/" % (self.__server,)
         elif api_version == 'was':
             # QualysGuard REST v3 API url (Portal API).
-            url = "https://%s/qps/rest/3.0/" % (self.server,)
+            url = "https://%s/qps/rest/3.0/" % (self.__server,)
         elif api_version == 'am':
             # QualysGuard REST v1 API url (Portal API).
             url = "https://%s/qps/rest/1.0/" % (self.server,)
@@ -142,7 +144,7 @@ class QGConnector(api_actions.QGActions):
         if api_version == 2:
             return 'post'
         elif api_version == 1:
-            if api_call in self.api_methods['1 post']:
+            if api_call in api_methods['1 post']:
                 return 'post'
             else:
                 return 'get'
@@ -151,12 +153,12 @@ class QGConnector(api_actions.QGActions):
             # Because WAS API enables user to GET API resources in URI, let's chop off the resource.
             # '/download/was/report/18823' --> '/download/was/report/'
             api_call_endpoint = api_call[:api_call.rfind('/') + 1]
-            if api_call_endpoint in self.api_methods['was get']:
+            if api_call_endpoint in api_methods['was get']:
                 return 'get'
             # Post calls with no payload will result in HTTPError: 415 Client Error: Unsupported Media Type.
             if not data:
                 # No post data. Some calls change to GET with no post data.
-                if api_call_endpoint in self.api_methods['was no data get']:
+                if api_call_endpoint in api_methods['was no data get']:
                     return 'get'
                 else:
                     return 'post'
@@ -165,7 +167,7 @@ class QGConnector(api_actions.QGActions):
                 return 'post'
         else:
             # Asset Management API call.
-            if api_call in self.api_methods['am get']:
+            if api_call in api_methods['am get']:
                 return 'get'
             else:
                 return 'post'
@@ -195,7 +197,7 @@ class QGConnector(api_actions.QGActions):
             # Add slash.
             logger.debug('Adding "/" to api_call.')
             api_call += '/'
-        if api_call in self.api_methods_with_trailing_slash[api_version]:
+        if api_call in api_methods_with_trailing_slash[api_version]:
             # Add slash.
             logger.debug('Adding "/" to api_call.')
             api_call += '/'
@@ -240,7 +242,7 @@ class QGConnector(api_actions.QGActions):
         #
         # Determine API version.
         # Preformat call.
-        api_call = self.preformat_call(api_call)
+        api_call = util.preformat_call(api_call)
         if api_version:
             # API version specified, format API version inputted.
             api_version = self.format_api_version(api_version)
@@ -274,9 +276,6 @@ class QGConnector(api_actions.QGActions):
             data = self.format_payload(api_version, data)
         # Make request at least once (more if concurrent_retry is enabled).
         retries = 0
-        #
-        # set a warning threshold for the rate limit
-        rate_warn_threshold = 10
         while retries <= concurrent_scans_retries:
             # Make request.
             logger.debug('url =\n%s' % (str(url)))
@@ -311,9 +310,22 @@ class QGConnector(api_actions.QGActions):
                 # Likely an asset search api_call.
                 logger.debug(e)
                 pass
-            # Response received.
-            response = str(request.content)
-            logger.debug('response text =\n%s' % (response))
+            # handle authentication exception special and early
+            if request.status_code == 401:
+                request.close()
+                raise QualysAuthenticationException('Bad Qualys username or \
+                    password.')
+            # Response received
+            for buffblock in request.iter_content(chunk_size=8192,
+                    decode_unicode=True):
+                logger.debug(pprint.pformat(buffblock))
+            response = b"".join([buffblock for buffblock in
+                request.iter_content(chunk_size=8192, decode_unicode=False)])
+            #logging.debug(pprint.pformat(response))
+            # for buffblock in request.iter_content(chunk_size=8192, decode_unicode=True):
+            #    response_str += unicode(buffblock)
+            # response = str(request.content)
+            #logger.debug('response text =\n%s' % (response))
             # Keep track of how many retries.
             retries += 1
             # Check for concurrent scans limit.
@@ -327,7 +339,8 @@ class QGConnector(api_actions.QGActions):
                 logger.critical(response)
                 # If trying again, delay next try by concurrent_scans_retry_delay.
                 if retries <= concurrent_scans_retries:
-                    logger.warning('Waiting %d seconds until next try.' % concurrent_scans_retry_delay)
+                    logger.warning('Waiting %d seconds until next try.' % \
+                            concurrent_scans_retry_delay)
                     time.sleep(concurrent_scans_retry_delay)
                     # Inform user of how many retries.
                     logger.critical('Retry #%d' % retries)
@@ -339,7 +352,7 @@ class QGConnector(api_actions.QGActions):
         # Check to see if there was an error.
         try:
             request.raise_for_status()
-        except requests.HTTPError as e:
+        except requests.exceptions.HTTPError as e:
             # Error
             print('Error! Received a 4XX client error or 5XX server error response.')
             print('Content = \n', response)
@@ -355,3 +368,89 @@ class QGConnector(api_actions.QGActions):
             logger.error('Headers = \n%s' % str(request.headers))
             return False
         return response
+
+    def stream_request(self, api_call, **kwargs):
+        """ Return QualysGuard API response as a raw input stream.  This is a
+        single request and does not handle concurrent requests.  It is a
+        redesigned version of the original request method and is intended for
+        use with the framework.  It is not cacheable directly and this is
+        intentional since most of the instances where this would be used would
+        be used should cache individual result objects and not the massive xml
+        response.
+        """
+        data = kwargs.pop(None)
+        api_version = kwargs.pop(None)
+        http_method = kwargs.pop(None)
+        concurrent_scans_retries = kwargs.pop(0)
+        concurrent_scans_retry_delay = kwargs.pop(0)
+
+        #
+        # Determine API version.
+        # Preformat call.
+        api_call = self.preformat_call(api_call)
+        if api_version:
+            # API version specified, format API version inputted.
+            api_version = self.format_api_version(api_version)
+        else:
+            # API version not specified, determine automatically.
+            api_version = self.which_api_version(api_call)
+        #
+        # Set up base url.
+        url = self.url_api_version(api_version)
+        #
+        # Set up headers.
+        headers = {"X-Requested-With": "Parag Baxi QualysAPI (python) v%s" % (qualysapi.version.__version__,)}
+        logger.debug('headers =\n%s' % (str(headers)))
+        # Portal API takes in XML text, requiring custom header.
+        if api_version in ('am', 'was'):
+            headers['Content-type'] = 'text/xml'
+        #
+        # Set up http request method, if not specified.
+        if not http_method:
+            http_method = self.format_http_method(api_version, api_call, data)
+        logger.debug('http_method =\n%s' % http_method)
+        #
+        # Format API call.
+        api_call = self.format_call(api_version, api_call)
+        logger.debug('api_call =\n%s' % (api_call))
+        # Append api_call to url.
+        url += api_call
+        #
+        # Format data, if applicable.
+        if data is not None:
+            data = self.format_payload(api_version, data)
+        # this call should be results/maps oriented for large domains and/or maps and/or asset groups so
+        # there really is no need or benefit to using concurrent scans here...
+        # use a stream-based non-blocking request
+        if http_method == 'get':
+            # GET
+            logger.debug('GET request.')
+            response = self.session.get(url,
+                    params=data,
+                    auth=self.auth,
+                    headers=headers,
+                    proxies=self.proxies,
+                    stream=True
+                )
+        else:
+            # POST
+            logger.debug('POST request.')
+            # Make POST request.
+            response = self.session.post(
+                    url,
+                    data=data,
+                    auth=self.auth,
+                    headers=headers,
+                    proxies=self.proxies,
+                    stream=True
+                )
+        if request.status_code == 401:
+            request.close()
+            raise QualysAuthenticationException('Bad Qualys username or \
+                password.')
+        response.raise_for_status()
+        response.raw.decode_content = True
+        return response.raw
+
+    def getConfig(self):
+        return self.config
