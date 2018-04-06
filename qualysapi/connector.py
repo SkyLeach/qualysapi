@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 __author__ = 'Parag Baxi <parag.baxi@gmail.com>'
 __copyright__ = 'Copyright 2013, Parag Baxi'
 __license__ = 'Apache License 2.0'
@@ -23,7 +25,6 @@ from qualysapi.exceptions import QualysAuthenticationException
 from qualysapi.api_methods import api_methods
 
 # Setup module level logging.
-logging.basicConfig()
 logger = logging.getLogger(__name__)
 
 try:
@@ -38,6 +39,7 @@ class QGConnector:
     """ Qualys Connection class which allows requests to the QualysGuard API using HTTP-Basic Authentication (over SSL).
 
     """
+<<<<<<< HEAD
     __auth                 = None
     __server               = 'qualysapi.qualys.com'
     __rate_limit_remaining = defaultdict(int)
@@ -46,6 +48,14 @@ class QGConnector:
     def __init__(self,
             auth,
             **kwargs):
+||||||| merged common ancestors
+
+
+    def __init__(self, auth, server='qualysapi.qualys.com', proxies=None, max_retries=3):
+=======
+
+    def __init__(self, auth, server='qualysapi.qualys.com', proxies=None, max_retries=3):
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         # Read username & password from file, if possible.
         self.auth = auth
         # Remember QualysGuard API server.
@@ -65,14 +75,18 @@ class QGConnector:
         self.session.mount('http://', http_max_retries)
         self.session.mount('https://', https_max_retries)
 
+<<<<<<< HEAD
         # new kwargs handling/options
         if 'config' in kwargs:
             self.config = kwargs.get('config')
 
 
+||||||| merged common ancestors
+
+=======
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def __call__(self):
         return self
-
 
     def format_api_version(self, api_version):
         """ Return QualysGuard API version for api_version specified.
@@ -88,6 +102,9 @@ class QGConnector:
             if api_version in ('asset management', 'assets', 'tag', 'tagging', 'tags'):
                 # Convert to Asset Management API.
                 api_version = 'am'
+            elif api_version in ('am2'):
+                # Convert to Asset Management API v2
+                api_version = 'am2'
             elif api_version in ('webapp', 'web application scanning', 'webapp scanning'):
                 # Convert to WAS API.
                 api_version = 'was'
@@ -97,7 +114,6 @@ class QGConnector:
             else:
                 api_version = int(api_version)
         return api_version
-
 
     def which_api_version(self, api_call):
         """ Return QualysGuard API version for api_call specified.
@@ -118,7 +134,6 @@ class QGConnector:
             return 'was'
         return False
 
-
     def url_api_version(self, api_version):
         """ Return base API url string for the QualysGuard api_version and server.
 
@@ -135,12 +150,20 @@ class QGConnector:
             url = "https://%s/qps/rest/3.0/" % (self.__server,)
         elif api_version == 'am':
             # QualysGuard REST v1 API url (Portal API).
+<<<<<<< HEAD
             url = "https://%s/qps/rest/1.0/" % (self.__server,)
+||||||| merged common ancestors
+            url = "https://%s/qps/rest/1.0/" % (self.server,)
+=======
+            url = "https://%s/qps/rest/1.0/" % (self.server,)
+        elif api_version == 'am2':
+            # QualysGuard REST v1 API url (Portal API).
+            url = "https://%s/qps/rest/2.0/" % (self.server,)
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         else:
             raise Exception("Unknown QualysGuard API Version Number (%s)" % (api_version,))
         logger.debug("Base url =\n%s" % (url))
         return url
-
 
     def format_http_method(self, api_version, api_call, data):
         """ Return QualysGuard API http method, with POST preferred..
@@ -180,7 +203,37 @@ class QGConnector:
             else:
                 return 'post'
 
+<<<<<<< HEAD
 
+||||||| merged common ancestors
+
+    def preformat_call(self, api_call):
+        """ Return properly formatted QualysGuard API call.
+
+        """
+        # Remove possible starting slashes or trailing question marks in call.
+        api_call_formatted = api_call.lstrip('/')
+        api_call_formatted = api_call_formatted.rstrip('?')
+        if api_call != api_call_formatted:
+            # Show difference
+            logger.debug('api_call post strip =\n%s' % api_call_formatted)
+        return api_call_formatted
+
+
+=======
+    def preformat_call(self, api_call):
+        """ Return properly formatted QualysGuard API call.
+
+        """
+        # Remove possible starting slashes or trailing question marks in call.
+        api_call_formatted = api_call.lstrip('/')
+        api_call_formatted = api_call_formatted.rstrip('?')
+        if api_call != api_call_formatted:
+            # Show difference
+            logger.debug('api_call post strip =\n%s' % api_call_formatted)
+        return api_call_formatted
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def format_call(self, api_version, api_call):
         """ Return properly formatted QualysGuard API call according to api_version etiquette.
 
@@ -200,7 +253,6 @@ class QGConnector:
             api_call += '/'
         return api_call
 
-
     def format_payload(self, api_version, data):
         """ Return appropriate QualysGuard API call.
 
@@ -217,13 +269,12 @@ class QGConnector:
                 # Convert to dictionary.
                 data = urllib.parse.parse_qs(data)
                 logger.debug('Converted:\n%s' % str(data))
-        elif api_version in ('am', 'was'):
+        elif api_version in ('am', 'was', 'am2'):
             if type(data) == etree._Element:
                 logger.debug('Converting lxml.builder.E to string')
                 data = etree.tostring(data)
                 logger.debug('Converted:\n%s' % data)
         return data
-
 
     def request(self, api_call, data=None, api_version=None, http_method=None, concurrent_scans_retries=0,
                 concurrent_scans_retry_delay=0):
@@ -256,7 +307,7 @@ class QGConnector:
         headers = {"X-Requested-With": "Parag Baxi QualysAPI (python) v%s" % (qualysapi.version.__version__,)}
         logger.debug('headers =\n%s' % (str(headers)))
         # Portal API takes in XML text, requiring custom header.
-        if api_version in ('am', 'was'):
+        if api_version in ('am', 'was', 'am2'):
             headers['Content-type'] = 'text/xml'
         #
         # Set up http request method, if not specified.
@@ -293,9 +344,31 @@ class QGConnector:
             #
             # Remember how many times left user can make against api_call.
             try:
+<<<<<<< HEAD
                 self.__rate_limit_remaining[api_call] = int(request.headers['x-ratelimit-remaining'])
                 logger.debug('rate limit for api_call, %s = %s' % (api_call, self.__rate_limit_remaining[api_call]))
             except KeyError as e:
+||||||| merged common ancestors
+                self.rate_limit_remaining[api_call] = int(request.headers['x-ratelimit-remaining'])
+                logger.debug('rate limit for api_call, %s = %s' % (api_call, self.rate_limit_remaining[api_call]))
+                if (self.rate_limit_remaining[api_call] > rate_warn_threshold):
+                    logger.debug('rate limit for api_call, %s = %s' % (api_call, self.rate_limit_remaining[api_call]))
+                elif (self.rate_limit_remaining[api_call] <= rate_warn_threshold) and (self.rate_limit_remaining[api_call] > 0):
+                    logger.warning('Rate limit is about to being reached (remaining api calls = %s)' % self.rate_limit_remaining[api_call])
+                elif self.rate_limit_remaining[api_call] <= 0:
+                    logger.critical('ATTENTION! RATE LIMIT HAS BEEN REACHED (remaining api calls = %s)!' % self.rate_limit_remaining[api_call])
+            except KeyError, e:
+=======
+                self.rate_limit_remaining[api_call] = int(request.headers['x-ratelimit-remaining'])
+                logger.debug('rate limit for api_call, %s = %s' % (api_call, self.rate_limit_remaining[api_call]))
+                if (self.rate_limit_remaining[api_call] > rate_warn_threshold):
+                    logger.debug('rate limit for api_call, %s = %s' % (api_call, self.rate_limit_remaining[api_call]))
+                elif (self.rate_limit_remaining[api_call] <= rate_warn_threshold) and (self.rate_limit_remaining[api_call] > 0):
+                    logger.warning('Rate limit is about to being reached (remaining api calls = %s)' % self.rate_limit_remaining[api_call])
+                elif self.rate_limit_remaining[api_call] <= 0:
+                    logger.critical('ATTENTION! RATE LIMIT HAS BEEN REACHED (remaining api calls = %s)!' % self.rate_limit_remaining[api_call])
+            except KeyError as e:
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
                 # Likely a bad api_call.
                 logger.debug(e)
                 pass
@@ -322,9 +395,19 @@ class QGConnector:
             # Keep track of how many retries.
             retries += 1
             # Check for concurrent scans limit.
+<<<<<<< HEAD
             if not (b'<responseCode>INVALID_REQUEST</responseCode>' in response and \
                                 b'<errorMessage>You have reached the maximum number of concurrent running scans' in response and \
                                 b'<errorResolution>Please wait until your previous scans have completed</errorResolution>' in response):
+||||||| merged common ancestors
+            if not ('<responseCode>INVALID_REQUEST</responseCode>' in response and \
+                                '<errorMessage>You have reached the maximum number of concurrent running scans' in response and \
+                                '<errorResolution>Please wait until your previous scans have completed</errorResolution>' in response):
+=======
+            if not ('<responseCode>INVALID_REQUEST</responseCode>' in response and
+                    '<errorMessage>You have reached the maximum number of concurrent running scans' in response and
+                    '<errorResolution>Please wait until your previous scans have completed</errorResolution>' in response):
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
                 # Did not hit concurrent scan limit.
                 break
             else:
@@ -347,17 +430,49 @@ class QGConnector:
             request.raise_for_status()
         except requests.exceptions.HTTPError as e:
             # Error
+<<<<<<< HEAD
             # only do this logging if we don't know the reason for the
             # exception (have already handled it IOTW)
             logger.exception('Error! Received a 4XX client error or 5XX server error response.')
             logger.error('    Content = \n%s' % response)
             logger.error('    Headers = \n%s' % str(request.headers))
+||||||| merged common ancestors
+            print 'Error! Received a 4XX client error or 5XX server error response.'
+            print 'Content = \n', response
+            logger.error('Content = \n%s' % response)
+            print 'Headers = \n', request.headers
+            logger.error('Headers = \n%s' % str(request.headers))
+=======
+            print('Error! Received a 4XX client error or 5XX server error response.')
+            print('Content = \n', response)
+            logger.error('Content = \n%s' % response)
+            print('Headers = \n', request.headers)
+            logger.error('Headers = \n%s' % str(request.headers))
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
             request.raise_for_status()
+<<<<<<< HEAD
         if b'<RETURN status="FAILED" number="2007">' in response:
             logger.error('Error! Your IP address is not in the list of secure IPs. Manager must include this IP (QualysGuard VM > Users > Security).')
             logger.error('    Content = \n%s' % response)
             logger.error('    Headers = \n%s' % str(request.headers))
         request.close()
+||||||| merged common ancestors
+        if '<RETURN status="FAILED" number="2007">' in response:
+            print 'Error! Your IP address is not in the list of secure IPs. Manager must include this IP (QualysGuard VM > Users > Security).'
+            print 'Content = \n', response
+            logger.error('Content = \n%s' % response)
+            print 'Headers = \n', request.headers
+            logger.error('Headers = \n%s' % str(request.headers))
+            return False
+=======
+        if '<RETURN status="FAILED" number="2007">' in response:
+            print('Error! Your IP address is not in the list of secure IPs. Manager must include this IP (QualysGuard VM > Users > Security).')
+            print('Content = \n', response)
+            logger.error('Content = \n%s' % response)
+            print('Headers = \n', request.headers)
+            logger.error('Headers = \n%s' % str(request.headers))
+            return False
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         return response
 
     def stream_request(self, api_call, **kwargs):

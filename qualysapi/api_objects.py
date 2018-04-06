@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 import lxml
 import logging
@@ -6,6 +7,7 @@ import json
 from multiprocessing import Process, Pool, Manager, get_context
 from multiprocessing.queues import Queue
 
+<<<<<<< HEAD
 import threading
 from qualysapi import exceptions
 
@@ -39,6 +41,12 @@ class CacheableQualysObject(object):
 
 
 class Host(CacheableQualysObject):
+||||||| merged common ancestors
+class Host(object):
+=======
+
+class Host(object):
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def __init__(self, dns, id, ip, last_scan, netbios, os, tracking_method):
         self.dns = str(dns)
         self.id = int(id)
@@ -50,8 +58,17 @@ class Host(CacheableQualysObject):
         self.netbios = str(netbios)
         self.os = str(os)
         self.tracking_method = str(tracking_method)
+<<<<<<< HEAD
 
 class AssetGroup(CacheableQualysObject):
+||||||| merged common ancestors
+        
+class AssetGroup(object):
+=======
+
+
+class AssetGroup(object):
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def __init__(self, business_impact, id, last_update, scanips, scandns, scanner_appliances, title):
         self.business_impact = str(business_impact)
         self.id = int(id)
@@ -71,6 +88,7 @@ class AssetGroup(CacheableQualysObject):
         call = '/api/2.0/fo/asset/group/'
         parameters = {'action': 'edit', 'id': self.id, 'set_ips': ips}
         conn.request(call, parameters)
+<<<<<<< HEAD
 # replaced
 # class ReportTemplate(CacheableQualysObject):
 #     def __init__(self, isGlobal, id, last_update, template_type, title, type, user):
@@ -157,11 +175,61 @@ class Report(CacheableQualysObject):
         if isinstance(self.id, str):
             self.id = int(self.id)
 
+||||||| merged common ancestors
+        
+class ReportTemplate(object):
+    def __init__(self, isGlobal, id, last_update, template_type, title, type, user):
+        self.isGlobal = int(isGlobal)
+        self.id = int(id)
+        self.last_update = str(last_update).replace('T', ' ').replace('Z', '').split(' ')
+        self.template_type = template_type
+        self.title = title
+        self.type = type
+        self.user = user.LOGIN
+        
+class Report(object):
+    def __init__(self, expiration_datetime, id, launch_datetime, output_format, size, status, type, user_login):
+        self.expiration_datetime = str(expiration_datetime).replace('T', ' ').replace('Z', '').split(' ')
+        self.id = int(id)
+        self.launch_datetime = str(launch_datetime).replace('T', ' ').replace('Z', '').split(' ')
+        self.output_format = output_format
+        self.size = size
+        self.status = status.STATE
+        self.type = type
+        self.user_login = user_login
+        
+=======
+
+
+class ReportTemplate(object):
+    def __init__(self, isGlobal, id, last_update, template_type, title, type, user):
+        self.isGlobal = int(isGlobal)
+        self.id = int(id)
+        self.last_update = str(last_update).replace('T', ' ').replace('Z', '').split(' ')
+        self.template_type = template_type
+        self.title = title
+        self.type = type
+        self.user = user.LOGIN
+
+
+class Report(object):
+    def __init__(self, expiration_datetime, id, launch_datetime, output_format, size, status, type, user_login):
+        self.expiration_datetime = str(expiration_datetime).replace('T', ' ').replace('Z', '').split(' ')
+        self.id = int(id)
+        self.launch_datetime = str(launch_datetime).replace('T', ' ').replace('Z', '').split(' ')
+        self.output_format = output_format
+        self.size = size
+        self.status = status.STATE
+        self.type = type
+        self.user_login = user_login
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def download(self, conn):
         call = '/api/2.0/fo/report'
         parameters = {'action': 'fetch', 'id': self.id}
         if self.status == 'Finished':
             return conn.request(call, parameters)
+<<<<<<< HEAD
 
 
 class QKBVuln(CacheableQualysObject):
@@ -856,6 +924,14 @@ class MapResult(Map):
 
 
 class Scan(CacheableQualysObject):
+||||||| merged common ancestors
+        
+class Scan(object):
+=======
+
+
+class Scan(object):
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def __init__(self, assetgroups, duration, launch_datetime, option_profile, processed, ref, status, target, title, type, user_login):
         self.assetgroups = assetgroups
         self.duration = str(duration)
@@ -871,6 +947,7 @@ class Scan(CacheableQualysObject):
         self.title = str(title)
         self.type = str(type)
         self.user_login = str(user_login)
+<<<<<<< HEAD
 
     def __repr__(self):
         ''' Represent this object in a human-readable string '''
@@ -886,38 +963,60 @@ class Scan(CacheableQualysObject):
         ''' % (self.title, self.launch_datetime, self.option_profile, self.ref,
                 self.status, self.target, self.type, self.user_login)
 
+||||||| merged common ancestors
+        
+=======
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def cancel(self, conn):
         cancelled_statuses = ['Cancelled', 'Finished', 'Error']
         if any(self.status in s for s in cancelled_statuses):
-            raise ValueError("Scan cannot be cancelled because its status is "+self.status)
+            raise ValueError("Scan cannot be cancelled because its status is " + self.status)
         else:
             call = '/api/2.0/fo/scan/'
             parameters = {'action': 'cancel', 'scan_ref': self.ref}
             conn.request(call, parameters)
 
             parameters = {'action': 'list', 'scan_ref': self.ref, 'show_status': 1}
+<<<<<<< HEAD
             self.status = lxml.objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
 
+||||||| merged common ancestors
+            self.status = objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
+            
+=======
+            self.status = objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def pause(self, conn):
         if self.status != "Running":
-            raise ValueError("Scan cannot be paused because its status is "+self.status)
+            raise ValueError("Scan cannot be paused because its status is " + self.status)
         else:
             call = '/api/2.0/fo/scan/'
             parameters = {'action': 'pause', 'scan_ref': self.ref}
             conn.request(call, parameters)
 
             parameters = {'action': 'list', 'scan_ref': self.ref, 'show_status': 1}
+<<<<<<< HEAD
             self.status = lxml.objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
 
+||||||| merged common ancestors
+            self.status = objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
+            
+=======
+            self.status = objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def resume(self, conn):
         if self.status != "Paused":
-            raise ValueError("Scan cannot be resumed because its status is "+self.status)
+            raise ValueError("Scan cannot be resumed because its status is " + self.status)
         else:
             call = '/api/2.0/fo/scan/'
             parameters = {'action': 'resume', 'scan_ref': self.ref}
             conn.request(call, parameters)
 
             parameters = {'action': 'list', 'scan_ref': self.ref, 'show_status': 1}
+<<<<<<< HEAD
             self.status = lxml.objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
 
 
@@ -1101,3 +1200,8 @@ obj_elem_map = {
     'REPORT_TEMPLATE': ReportTemplate,
     'SESPONSE': SimpleReturnResponse,
 }
+||||||| merged common ancestors
+            self.status = objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
+=======
+            self.status = objectify.fromstring(conn.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN.STATUS.STATE
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a

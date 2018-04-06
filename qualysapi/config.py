@@ -1,24 +1,35 @@
 """ Module providing a single class (QualysConnectConfig) that parses a config
 file and provides the information required to build QualysGuard sessions.
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import stat
 import getpass
 import logging
+<<<<<<< HEAD
 import pprint
+||||||| merged common ancestors
+=======
+from six.moves import input
+from six.moves.configparser import *
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
 
-logging.basicConfig()
-
+import qualysapi.settings as qcs
 # Setup module level logging.
 logger = logging.getLogger(__name__)
 
+<<<<<<< HEAD
 from configparser import *
+||||||| merged common ancestors
+from ConfigParser import *
+=======
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
 # try:
 #    from requests_ntlm import HttpNtlmAuth
-#except ImportError, e:
+# except ImportError, e:
 #    logger.warning('Warning: Cannot support NTML authentication.')
 
-import qualysapi.settings as qcs
 
 __author__ = "Parag Baxi <parag.baxi@gmail.com> & Colin Bell <colin.bell@uwaterloo.ca>"
 __copyright__ = "Copyright 2011-2013, Parag Baxi & University of Waterloo"
@@ -62,9 +73,17 @@ class QualysConnectConfig:
             mode = stat.S_IMODE(os.stat(self._cfgfile)[stat.ST_MODE])
 
             # apply bitmask to current mode to check ONLY user access permissions.
+<<<<<<< HEAD
             if (mode & ( stat.S_IRWXG | stat.S_IRWXO )) != 0:
                 logging.warning('%s permissions allows more than user access.'
                         % (self._cfgfile,))
+||||||| merged common ancestors
+            if (mode & ( stat.S_IRWXG | stat.S_IRWXO )) != 0:
+                logging.warning('%s permissions allows more than user access.' % (filename,))
+=======
+            if (mode & (stat.S_IRWXG | stat.S_IRWXO)) != 0:
+                logging.warning('%s permissions allows more than user access.' % (filename,))
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
 
             self._cfgparse.read(self._cfgfile)
 
@@ -204,6 +223,7 @@ class QualysConnectConfig:
                 self._cfgparse.write(config_file)
                 config_file.close()
 
+<<<<<<< HEAD
         # Use default map_template (if one isn't provided).
         if not self._cfgparse.has_option('report_templates', 'map_template'):
             if self._cfgparse.has_option('DEFAULT', 'map_template'):
@@ -212,6 +232,17 @@ class QualysConnectConfig:
             else:
                 raise Exception("No 'map_template' set. QualysConnect does not know who to connect to.")
 
+||||||| merged common ancestors
+
+    def get_config_filename(self):
+        return self._cfgfile
+
+
+=======
+    def get_config_filename(self):
+        return self._cfgfile
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def get_config(self):
         return self._cfgparse
 
@@ -221,6 +252,7 @@ class QualysConnectConfig:
 
     def get_hostname(self):
         ''' Returns hostname. '''
+<<<<<<< HEAD
         return self._cfgparse.get('info', 'hostname')
 
     def get_redis_options(self):
@@ -239,3 +271,8 @@ class QualysConnectConfig:
 
     def getReportTemplate(self):
         return self._cfgfile.get('report_templates', 'report_template')
+||||||| merged common ancestors
+        return self._cfgparse.get('info', 'hostname')
+=======
+        return self._cfgparse.get('info', 'hostname')
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a

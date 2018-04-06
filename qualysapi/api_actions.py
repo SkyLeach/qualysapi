@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 from lxml import objectify, etree
+||||||| merged common ancestors
+from lxml import objectify
+=======
+from __future__ import absolute_import
+from lxml import objectify
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
 import qualysapi.api_objects
 from qualysapi.api_objects import *
 from qualysapi.exceptions import *
@@ -66,6 +73,13 @@ class QGActions(object):
         '''single-thread/process parseResponse.'''
         raise exceptions.QualysFrameworkException('Not yet implemented.')
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+class QGActions(object):  
+=======
+
+class QGActions(object):
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def getHost(host):
         call = '/api/2.0/fo/asset/host/'
         parameters = {'action': 'list', 'ips': host, 'details': 'All'}
@@ -78,22 +92,44 @@ class QGActions(object):
 
     def getHostRange(self, start, end):
         call = '/api/2.0/fo/asset/host/'
+<<<<<<< HEAD
         parameters = {'action': 'list', 'ips': start+'-'+end}
         hostData = objectify.fromstring(self.request(call, data=parameters))
+||||||| merged common ancestors
+        parameters = {'action': 'list', 'ips': start+'-'+end}
+        hostData = objectify.fromstring(self.request(call, parameters))
+=======
+        parameters = {'action': 'list', 'ips': start + '-' + end}
+        hostData = objectify.fromstring(self.request(call, parameters))
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         hostArray = []
         for host in hostData.RESPONSE.HOST_LIST.HOST:
             hostArray.append(Host(host.DNS, host.ID, host.IP, host.LAST_VULN_SCAN_DATETIME, host.NETBIOS, host.OS, host.TRACKING_METHOD))
 
         return hostArray
+<<<<<<< HEAD
 
 
+||||||| merged common ancestors
+        
+=======
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def listAssetGroups(self, groupName=''):
         call = 'asset_group_list.php'
         if groupName == '':
             agData = objectify.fromstring(self.request(call))
         else:
+<<<<<<< HEAD
             agData = objectify.fromstring(self.request(call, 'title='+groupName)).RESPONSE
 
+||||||| merged common ancestors
+            agData = objectify.fromstring(self.request(call, 'title='+groupName)).RESPONSE
+            
+=======
+            agData = objectify.fromstring(self.request(call, 'title=' + groupName)).RESPONSE
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         groupsArray = []
         scanipsArray = []
         scandnsArray = []
@@ -103,23 +139,48 @@ class QGActions(object):
                 for scanip in group.SCANIPS:
                     scanipsArray.append(scanip.IP)
             except AttributeError:
+<<<<<<< HEAD
                 scanipsArray = [] # No IPs defined to scan.
 
+||||||| merged common ancestors
+                scanipsArray = [] # No IPs defined to scan.
+                
+=======
+                scanipsArray = []  # No IPs defined to scan.
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
             try:
                 for scanner in group.SCANNER_APPLIANCES.SCANNER_APPLIANCE:
                     scannersArray.append(scanner.SCANNER_APPLIANCE_NAME)
             except AttributeError:
+<<<<<<< HEAD
                 scannersArray = [] # No scanner appliances defined for this group.
 
+||||||| merged common ancestors
+                scannersArray = [] # No scanner appliances defined for this group.
+                
+=======
+                scannersArray = []  # No scanner appliances defined for this group.
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
             try:
                 for dnsName in group.SCANDNS:
                     scandnsArray.append(dnsName.DNS)
             except AttributeError:
+<<<<<<< HEAD
                 scandnsArray = [] # No DNS names assigned to group.
 
+||||||| merged common ancestors
+                scandnsArray = [] # No DNS names assigned to group.
+                
+=======
+                scandnsArray = []  # No DNS names assigned to group.
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
             groupsArray.append(AssetGroup(group.BUSINESS_IMPACT, group.ID, group.LAST_UPDATE, scanipsArray, scandnsArray, scannersArray, group.TITLE))
 
         return groupsArray
+<<<<<<< HEAD
 
 
     # single-thread/process specific 1-off query for starting a map report
@@ -322,18 +383,52 @@ class QGActions(object):
         return result
 
 
+||||||| merged common ancestors
+        
+       
+=======
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def listReportTemplates(self):
         '''Load a list of report templates'''
         call = 'report_template_list.php'
+<<<<<<< HEAD
         return self.parseResponse(source=call, data=None)
 
+||||||| merged common ancestors
+        rtData = objectify.fromstring(self.request(call))
+        templatesArray = []
+        
+        for template in rtData.REPORT_TEMPLATE:
+            templatesArray.append(ReportTemplate(template.GLOBAL, template.ID, template.LAST_UPDATE, template.TEMPLATE_TYPE, template.TITLE, template.TYPE, template.USER))
+        
+        return templatesArray
+        
+=======
+        rtData = objectify.fromstring(self.request(call))
+        templatesArray = []
+
+        for template in rtData.REPORT_TEMPLATE:
+            templatesArray.append(ReportTemplate(template.GLOBAL, template.ID, template.LAST_UPDATE, template.TEMPLATE_TYPE, template.TITLE, template.TYPE, template.USER))
+
+        return templatesArray
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def listReports(self, id=0):
         call = '/api/2.0/fo/report'
 
         if id == 0:
             parameters = {'action': 'list'}
+<<<<<<< HEAD
 
             repData = objectify.fromstring(self.request(call, data=parameters)).RESPONSE
+||||||| merged common ancestors
+            
+            repData = objectify.fromstring(self.request(call, parameters)).RESPONSE
+=======
+
+            repData = objectify.fromstring(self.request(call, parameters)).RESPONSE
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
             reportsArray = []
 
             for report in repData.REPORT_LIST.REPORT:
@@ -345,8 +440,15 @@ class QGActions(object):
             parameters = {'action': 'list', 'id': id}
             repData = objectify.fromstring(self.request(call, data=parameters)).RESPONSE.REPORT_LIST.REPORT
             return Report(repData.EXPIRATION_DATETIME, repData.ID, repData.LAUNCH_DATETIME, repData.OUTPUT_FORMAT, repData.SIZE, repData.STATUS, repData.TYPE, repData.USER_LOGIN)
+<<<<<<< HEAD
 
 
+||||||| merged common ancestors
+        
+        
+=======
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def notScannedSince(self, days):
         call = '/api/2.0/fo/asset/host/'
         parameters = {'action': 'list', 'details': 'All'}
@@ -362,8 +464,8 @@ class QGActions(object):
         return hostArray
 
     def addIP(self, ips, vmpc):
-        #'ips' parameter accepts comma-separated list of IP addresses.
-        #'vmpc' parameter accepts 'vm', 'pc', or 'both'. (Vulnerability Managment, Policy Compliance, or both)
+        # 'ips' parameter accepts comma-separated list of IP addresses.
+        # 'vmpc' parameter accepts 'vm', 'pc', or 'both'. (Vulnerability Managment, Policy Compliance, or both)
         call = '/api/2.0/fo/asset/ip/'
         enablevm = 1
         enablepc = 0
@@ -375,6 +477,7 @@ class QGActions(object):
             enablepc = 1
 
         parameters = {'action': 'add', 'ips': ips, 'enable_vm': enablevm, 'enable_pc': enablepc}
+<<<<<<< HEAD
         self.request(call, data=parameters)
 
     def asyncListMaps(self, bind=False):
@@ -393,12 +496,19 @@ class QGActions(object):
         data = {}
         return self.parseResponse(source=call, data=data)
 
+||||||| merged common ancestors
+        self.request(call, parameters)
+        
+=======
+        self.request(call, parameters)
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
     def listScans(self, launched_after="", state="", target="", type="", user_login=""):
-        #'launched_after' parameter accepts a date in the format: YYYY-MM-DD
-        #'state' parameter accepts "Running", "Paused", "Canceled", "Finished", "Error", "Queued", and "Loading".
-        #'title' parameter accepts a string
-        #'type' parameter accepts "On-Demand", and "Scheduled".
-        #'user_login' parameter accepts a user name (string)
+        # 'launched_after' parameter accepts a date in the format: YYYY-MM-DD
+        # 'state' parameter accepts "Running", "Paused", "Canceled", "Finished", "Error", "Queued", and "Loading".
+        # 'title' parameter accepts a string
+        # 'type' parameter accepts "On-Demand", and "Scheduled".
+        # 'user_login' parameter accepts a user name (string)
         call = '/api/2.0/fo/scan/'
         parameters = {'action': 'list', 'show_ags': 1, 'show_op': 1, 'show_status': 1}
         if launched_after != "":
@@ -415,8 +525,16 @@ class QGActions(object):
 
         if user_login != "":
             parameters['user_login'] = user_login
+<<<<<<< HEAD
 
         scanlist = objectify.fromstring(self.request(call, data = parameters))
+||||||| merged common ancestors
+            
+        scanlist = objectify.fromstring(self.request(call, parameters))
+=======
+
+        scanlist = objectify.fromstring(self.request(call, parameters))
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         scanArray = []
         for scan in scanlist.RESPONSE.SCAN_LIST.SCAN:
             try:
@@ -439,13 +557,31 @@ class QGActions(object):
 
         if asset_groups == "":
             parameters.pop("asset_groups")
+<<<<<<< HEAD
 
         scan_ref = objectify.fromstring(self.request(call, data=parameters)).RESPONSE.ITEM_LIST.ITEM[1].VALUE
 
+||||||| merged common ancestors
+            
+        scan_ref = objectify.fromstring(self.request(call, parameters)).RESPONSE.ITEM_LIST.ITEM[1].VALUE
+        
+=======
+
+        scan_ref = objectify.fromstring(self.request(call, parameters)).RESPONSE.ITEM_LIST.ITEM[1].VALUE
+
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         call = '/api/2.0/fo/scan/'
         parameters = {'action': 'list', 'scan_ref': scan_ref, 'show_status': 1, 'show_ags': 1, 'show_op': 1}
+<<<<<<< HEAD
 
         scan = objectify.fromstring(self.request(call, data=parameters)).RESPONSE.SCAN_LIST.SCAN
+||||||| merged common ancestors
+        
+        scan = objectify.fromstring(self.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN
+=======
+
+        scan = objectify.fromstring(self.request(call, parameters)).RESPONSE.SCAN_LIST.SCAN
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
         try:
             agList = []
             for ag in scan.ASSET_GROUP_TITLE_LIST.ASSET_GROUP_TITLE:

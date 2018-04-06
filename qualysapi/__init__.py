@@ -2,10 +2,12 @@
 # setup.py install
 
 # Ownership and Copyright Information.
+from __future__ import absolute_import
 __author__ = "Parag Baxi <parag.baxi@gmail.com>"
 __copyright__ = "Copyright 2011-2013, Parag Baxi"
 __license__ = "BSD-new"
 
+<<<<<<< HEAD
 
 import logging
 
@@ -38,3 +40,8 @@ def connect(**kwargs):
             config=conf)
     logging.info("Finished building connector.")
     return connect
+||||||| merged common ancestors
+from qualysapi.util import connect
+=======
+from qualysapi.util import connect
+>>>>>>> bd8eac49447bb49fa3128d365076786daf923b4a
